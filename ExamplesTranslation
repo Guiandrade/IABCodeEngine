@@ -1,4 +1,9 @@
 Examples:
 
-1)   // The helper object
-    IabHelper mHelper;
+1) Test for changing helper class.
+  
+// The helper object
+IabHelper mHelper;
+
+
+2) Test for creating and setting up Options object and replace Google code.
