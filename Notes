@@ -1,0 +1,71 @@
+How OpenIAB works
+
+1-An Android app developer integrates OpenIAB library in his/her Android code
+2-An Android app developer implements in-app purchases using OpenIAB API (which is very close to Google Play IAB API, just a few changes in source code will be needed)
+3-OpenIAB Lib detects which app store installed the app
+4-OpenIAB Lib redirects in-app purchase calls to the corresponding app store IAB API (OpenIAB Lib wraps IAB APIs of severall apstores)
+5-All In-App Billing logic is handled by the corresponding app store, OpenIAB has no code to process in-app purchases and has no UI, it just wraps In-App Billing APIs of different stores in one library
+
+Basic principles
+
+-As close to Google Play In-app Billing API as possible - we optimize the OpenIAB library by the following parameter "lines on code you need to change in an app that already works in Google Play to make it working in all the appstores"
+-One APK works in all app stores - OpenIAB chooses proper billing method automatically or follows your requirements
+-Open In-App Billing protocol - OpenIAB is designed to provide a lightweight solution that supports hundreds of appstores. When app store implements OpenIAB protocol on app store side all applications with OpenIAB become fully compatible with new app store without recompiling.
+-No middle man
+
+
+Adicionar OpenIAB a uma aplicação: 
+
+https://github.com/onepf/OpenIAB/wiki/How-To-add-OpenIAB-to-an-app
+
+
+
+Tarefa: 
+ * Phase1:
+ IAB code migration engine: create a Web page with two boxes and a button in the middle of them. The left box is an input box where the developer pastes the source code of it’s Android App with Google  IAB “calls”. After pressing  the button, the engine inserts the OpenIAB code in the right box. He then can copy that code to their IDE
+
+(Se houver tempo)
+* Phase 2: 
+Develop an import mechanism to import the SKUs (items bought inside the App) into our platform. The import mechanism an work in one of the following ways: 1) CSV exportation in Google Play backoffice and importation in Aptoide backoffice 2) API calls from Aptoide to Play to retrieve the existent SKUs 3) scraping of the Play backoffice with the Developer credentials.  The proof of concept consists in retrieving the SKUs in one of the ways.
+
+
+Passos:
+Verificar funcionamento do OpenIAB.
+Qual é a maneira de analisar texto colocado no site, javascript? Html script? PHP?
+Criar alguns exemplos simples de teste.
+Bastante rigor na validação dos dados.
+Validar com os exemplos as traduções efectuadas.
+
+
+Setup para o user:
+
+Add library to your project.
+You can clone the library git clone https://github.com/onepf/OpenIAB.git and add /library as a Library Project.
+Or:
+Download latest release JAR on https://github.com/onepf/OpenIAB/releases page.
+Download dependencies: fortumo-in-app-9.1.2.jar and in-app-purchasing-2.0.1.jar
+Or use Gradle:
+Add repository to resolve third party dependencies:
+allprojects {
+    repositories {
+        maven { url 'https://raw.githubusercontent.com/onepf/OPF-mvn-repo/master/' }
+        jcenter()
+    }
+}
+Add dependency:
+compile 'org.onepf:openiab:0.9.8.4'
+
+
+
+Testes:
+
+
+1) Test for changing helper class.
+ 
+// The helper object
+IabHelper mHelper;
+
+
+2) Test for creating and setting up Options object and replace Google code.
+
+Como fazer isto??
