@@ -1,21 +1,12 @@
 <%@ page import="org.guiandrade.TesteResource,java.util.*"%>
+
+
 <jsp:useBean id="teste" class="org.guiandrade.TesteResource">
 	<jsp:setProperty name="teste" property="name"
 		value="Primeiro teste com o jsp:setProperty!" />
 </jsp:useBean>
-<jsp:useBean id="date" class="java.util.Date" />
 
-<p>
-	The date/time is
-	<%=date%>
-</p>
-<p>
-	The name of the resource object is:
-	<jsp:getProperty name="teste" property="name" />
-</p>
-<p>
-	<%= teste.getResponse() %>
-</p>
+
 
 <!DOCTYPE html>
 <html lang="en-us">
@@ -35,12 +26,13 @@
 		<p>Insert here your Android code with Google In-App Billing calls
 			and press the Submit button to translate to OpenIab code.</p>
 
-		<form action="index.jsp" method="GET">
-			<input type="text" name="pastedCode" class="code">Paste your code here!<br />
-			<input type="submit" value="Submit" />
+		<form action="index.jsp" method="POST" accept-charset="utf-8">
+			<textarea name="pastedCode" class="code">Paste your code here!</textarea>
+			<input type="submit" value="Submit" onclick="translate()" />
 		</form>
 
 	</div>
+
 
 
 	<div class="box">
@@ -51,6 +43,15 @@
 		<textarea id="newCode" class="code">Your OpenIAB will be shown here! </textarea>
 	</div>
 
-</body>
-</html>
 
+</body>
+<script> 
+
+function translate(){ 
+	<%String texto = request.getParameter("pastedCode");
+			String resposta = teste.getResponse(texto);%>	
+   var response="<%=resposta%>";
+		document.getElementById("newCode").value = response;
+	}
+</script>
+</html>

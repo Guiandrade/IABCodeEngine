@@ -25,8 +25,8 @@ public class TesteResource implements java.io.Serializable{
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public String getResponse(){
-		return testeService.getTranslation();
+	public String getResponse(String txt){
+		return testeService.getTranslation(txt);
 	}
 	
 	@POST
