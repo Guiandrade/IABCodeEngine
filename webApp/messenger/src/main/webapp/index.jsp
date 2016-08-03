@@ -14,6 +14,7 @@
 
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="style.css" />
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 
 </head>
 
@@ -46,15 +47,12 @@
 		<textarea id="newCode" class="code">Your OpenIAB will be shown here! </textarea>
 	</div>
 
-
-</body>
-
 <script>
 
 function doTranslation(){ 
 	var textBox = document.getElementById("pastedCode").value;
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', 'http://localhost:8080/messenger/index.jsp?key=' + encodeURIComponent(textBox), true);
+	xhr.open('POST', 'http://localhost:8080/messenger?key=' + encodeURIComponent(textBox), true);
 	xhr.send();
 	<%
 	String texto = request.getParameter("key") ;
@@ -67,5 +65,8 @@ function doTranslation(){
 	return true;
 }
 </script>
+</body>
+
+
 
 </html>
