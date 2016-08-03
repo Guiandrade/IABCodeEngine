@@ -16,6 +16,8 @@
 <link rel="stylesheet" type="text/css" href="style.css" />
 
 </head>
+
+
 <body>
 
 	<h1>IAB Code Migration Engine</h1>
@@ -26,9 +28,10 @@
 		<p>Insert here your Android code with Google In-App Billing calls
 			and press the Submit button to translate to OpenIab code.</p>
 
-		<form action="index.jsp" method="POST" accept-charset="utf-8">
-			<textarea name="pastedCode" class="code">Paste your code here!</textarea>
-			<input type="submit" value="Submit" onclick="translate()" />
+		<form action="index.jsp" method="POST">
+			<textarea id="pastedCode" class="code">Paste your code here!</textarea>
+			<button name="data" type="button" onclick="doTranslation()">
+				Submit</button>
 		</form>
 
 	</div>
@@ -45,13 +48,24 @@
 
 
 </body>
-<script> 
 
-function translate(){ 
-	<%String texto = request.getParameter("pastedCode");
-			String resposta = teste.getResponse(texto);%>	
-   var response="<%=resposta%>";
-		document.getElementById("newCode").value = response;
-	}
+<script>
+
+function doTranslation(){ 
+	var textBox = document.getElementById("pastedCode").value;
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', 'http://localhost:8080/messenger/index.jsp?key=' + encodeURIComponent(textBox), true);
+	xhr.send();
+	<%
+	String texto = request.getParameter("key") ;
+	%>
+	alert(<%=texto%>);
+	
+<%--    	var response=<%=resposta%>; --%>
+// 		document.getElementById("newCode").value = response;
+	
+	return true;
+}
 </script>
+
 </html>
