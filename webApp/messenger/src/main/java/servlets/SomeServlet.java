@@ -17,4 +17,15 @@ public class SomeServlet extends HttpServlet {
 	    response.setCharacterEncoding("UTF-8"); // You want world domination, huh?
 	    response.getWriter().write(text);       // Write response body.
 	}
+	
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	    String text = request.getParameter("pastedCode")+ " ALTERACAO NO SERVER .";
+	    response.setContentType("text/plain");  // Set content type of the response so that jQuery knows what it can expect.
+	    response.setCharacterEncoding("UTF-8"); // You want world domination, huh?
+	    response.getWriter().write(text);       // Write response body.
+
+
+
+	}
 }

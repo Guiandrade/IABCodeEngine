@@ -14,19 +14,21 @@
 
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="style.css" />
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-        <script>
-            $(document).on("click", "#somebutton", function() { // When HTML DOM "click" event is invoked on element with ID "somebutton", execute the following function...
-                $.get("someservlet", function(responseText) {   // Execute Ajax GET request on URL of "someservlet" and execute the following function with Ajax response text...
-                    $("#newCode").text(responseText);           // Locate HTML DOM element with ID "newCode" and set its text content with the response text.
-                });
+<script
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script>
+        
+            $(document).on("click", "#data", function() { // When HTML DOM "click" event is invoked on element with ID "data", execute the following function...
+            	var text = document.getElementById("pastedCode").value;
+            	$.post("someservlet", {pastedCode: text}, function(response) { 
+            		$("#newCode").text(response);
+            	});
             });
         </script>
 </head>
 
 
 <body>
-        <button id="somebutton">press here</button>
 	<h1>IAB Code Migration Engine</h1>
 
 	<div class="box">
@@ -35,10 +37,9 @@
 		<p>Insert here your Android code with Google In-App Billing calls
 			and press the Submit button to translate to OpenIab code.</p>
 
-		<form action="index.jsp" method="POST">
+		<form action="index.jsp">
 			<textarea id="pastedCode" class="code">Paste your code here!</textarea>
-			<button name="data" type="button" onclick="doTranslation()">
-				Submit</button>
+			<button id="data" type="button">Submit</button>
 		</form>
 
 	</div>
@@ -52,7 +53,7 @@
 
 		<textarea id="newCode" class="code">Your OpenIAB will be shown here! </textarea>
 	</div>
-<%--  
+	<%--  
 <script>
 
 function doTranslation(){ 
