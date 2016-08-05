@@ -8,6 +8,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+import org.jboss.forge.roaster.Roaster;
+import org.jboss.forge.roaster.model.source.JavaClassSource;
+
 import services.TesteService;
 
 @Path("resources")
@@ -20,6 +23,7 @@ public class TesteResource implements java.io.Serializable{
 	private String name = null;
 	private Date date = null;
 	private String content = null;
+	private final String mandatoryImport = "org.onepf.oms.OpenIabHelper";
 
 	
 	TesteService testeService = new TesteService();
@@ -50,7 +54,8 @@ public class TesteResource implements java.io.Serializable{
 	public String changeIAB(String text){
 		 // Function that will do the translation
 		
-		String mandatoryImport = "import org.onepf.oms.OpenIabHelper;";
+		JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, text);
+
 		String textOutput = "";
 		String newImport = "";
 		String mandatoryCreation = " new OpenIabHelper.Options.Builder()";
@@ -65,16 +70,17 @@ public class TesteResource implements java.io.Serializable{
 				+ "\n// You can also specify .addStoreKeys(storeKeys map)\n\n"
 				+ helperAssign;
 		
-		textOutput = textOutput.concat(text);
 		
 		if (!text.contains(mandatoryImport)
 				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
-			newImport = mandatoryImport.concat("\n\n");
+			
+			newImport = addIabImport(javaClass).concat("\n\n");
 			textOutput = newImport.concat(textOutput);
 			textOutput = textOutput.concat(options);
 		}
 		else if (!text.contains(mandatoryImport)) {
-			newImport = mandatoryImport.concat("\n\n");
+			
+			newImport = addIabImport(javaClass).concat("\n\n");
 			textOutput = newImport.concat(textOutput);
 		}
 		else {
@@ -84,6 +90,13 @@ public class TesteResource implements java.io.Serializable{
 		
 	}
 	
+	public String addIabImport(JavaClassSource javaClass){
+		
+		javaClass.addImport(mandatoryImport);
+		String unformattedText = javaClass.toUnformattedString();
+		String formattedText = Roaster.format(unformattedText);
+		return formattedText;
+	}
 
 	public Date getDate() {
 		return date;
