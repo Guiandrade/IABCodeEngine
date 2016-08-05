@@ -15,16 +15,21 @@
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="style.css" />
 <script
-	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+	src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js">
+</script>
+
 <script>
-        
-            $(document).on("click", "#data", function() { // When HTML DOM "click" event is invoked on element with ID "data", execute the following function...
-            	var text = document.getElementById("pastedCode").value;
-            	$.post("someservlet", {pastedCode: text}, function(response) { 
-            		$("#newCode").text(response);
-            	});
-            });
-        </script>
+	$(document).on("click", "#data", function() { // When HTML DOM "click" event is invoked on element with ID "data", execute the following function...
+		var text = document.getElementById("pastedCode").value;
+
+		$.post("someservlet", {
+			pastedCode : text
+		}, function(response) {
+			$("#newCode").text(response);
+		});
+
+	});
+</script>
 </head>
 
 
@@ -53,26 +58,7 @@
 
 		<textarea id="newCode" class="code">Your OpenIAB will be shown here! </textarea>
 	</div>
-	<%--  
-<script>
 
-function doTranslation(){ 
-	var textBox = document.getElementById("pastedCode").value;
-	var xhr = new XMLHttpRequest();
-	xhr.open('POST', 'http://localhost:8080/messenger?key=' + encodeURIComponent(textBox), true);
-	xhr.send();
-	<%
-	String texto = request.getParameter("key") ;
-	%>
-	alert(<%=texto%>);
-	
-  	var response=<%=resposta%>; 
-	document.getElementById("newCode").value = response;
-	
-	return true;
-}
-</script>
---%>
 </body>
 
 
