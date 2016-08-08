@@ -61,23 +61,29 @@ public class TesteResource implements java.io.Serializable{
 		String setStoreSearchStrategy = ".setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER)\n\t";
 		String setVerifyMode = ".setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN)\n";
 		String helperAssign = "mHelper = new OpenIabHelper(this, builder.build());\n";
-		String options = "\n// Please call this constructor before starting setup. \n\nOpenIabHelper.Options.Builder builder ="
+		String options = "\n // Please call this constructor before starting setup. \n\n OpenIabHelper.Options.Builder builder ="
 				+ mandatoryCreation
 				+ "\n\t"
 				+ setStoreSearchStrategy
 				+ setVerifyMode
 				+ "\n// You can also specify .addStoreKeys(storeKeys map)\n\n"
 				+ helperAssign;
-
-		javaClass.addMethod().setPublic().setName("setupIAB").setReturnTypeVoid().setBody(options);
-
-		System.out.println("Devia estar aqui o body -> "+javaClass.getMethod("setupIAB").getBody());
 		
+/*		Tentativa usando roaster que não funciona por causa do setBody()
+ * 
+ * javaClass.addMethod()
+ *			.setPublic()
+ *			.setStatic(false)
+ *			.setName("setupIAB")
+ *			.setReturnTypeVoid()
+ *			.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder() \n\t .setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
+*/
+
 		if (!text.contains(mandatoryImport)
 				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
 
 			textOutput= addIabImport(javaClass);
-			//	textOutput = textOutput.concat(options);
+			//textOutput = textOutput.concat(options);
 		}
 		else if (!text.contains(mandatoryImport)) {
 
@@ -87,8 +93,21 @@ public class TesteResource implements java.io.Serializable{
 		else {
 			textOutput = options.concat(textOutput);
 		}
-		return textOutput;
+		return Roaster.format(changeToIab(textOutput,options));
 
+	}
+
+	private String changeToIab(String textOutput,String options) {
+		String helper= "IabHelper mHelper;";
+		String newHelper= "OpenIabHelper mHelper;";
+		String constructor = "mHelper = new IabHelper(this, base64EncodedPublicKey);";
+		if (textOutput.contains(helper) ){
+			textOutput = textOutput.replace(helper,newHelper);
+		}
+		if (textOutput.contains(constructor)){
+			textOutput = textOutput.replace(constructor, options);
+		}
+		return textOutput;
 	}
 
 	public String addIabImport(JavaClassSource javaClass){
