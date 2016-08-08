@@ -2,16 +2,11 @@ package org.guiandrade;
 
 import java.util.Date;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
 
-import services.TesteService;
 
 @Path("resources")
 public class TesteResource implements java.io.Serializable{
@@ -24,21 +19,6 @@ public class TesteResource implements java.io.Serializable{
 	private Date date = null;
 	private String content = null;
 	private final String mandatoryImport = "org.onepf.oms.OpenIabHelper";
-
-
-	TesteService testeService = new TesteService();
-
-	/*	@GET
-	@Produces(MediaType.APPLICATION_JSON)
-	public String getResponse(String txt){
-		return testeService.getTranslation(txt);
-	}
-
-	@POST
-	@Produces(MediaType.APPLICATION_JSON)
-	public String add(){
-		return "Post works!";
-	}*/
 
 	public boolean checkContent(String text){
 		// Function that makes simple initial verifications.
@@ -83,7 +63,7 @@ public class TesteResource implements java.io.Serializable{
 				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
 
 			textOutput= addIabImport(javaClass);
-			//textOutput = textOutput.concat(options);
+			
 		}
 		else if (!text.contains(mandatoryImport)) {
 
