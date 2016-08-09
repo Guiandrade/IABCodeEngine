@@ -35,7 +35,11 @@
 
 <body>
 	<h1>IAB Code Migration Engine</h1>
-
+	
+	<div style="text-align: left">
+	<a href="https://github.com/onepf/OpenIAB/wiki/How-To-add-OpenIAB-to-an-app" target="_blank">Click Here to Know How to Add OpenIab to an App.</a>
+	</div>
+	
 	<div class="box">
 
 		<h2>Google API Code</h2>

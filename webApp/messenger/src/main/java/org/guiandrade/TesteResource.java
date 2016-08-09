@@ -62,37 +62,68 @@ public class TesteResource implements java.io.Serializable{
 		if (!text.contains(mandatoryImport)
 				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
 
-			textOutput= addIabImport(javaClass);
+			textOutput= addIabImports(javaClass);
 			
 		}
 		else if (!text.contains(mandatoryImport)) {
 
-			textOutput = addIabImport(javaClass);
+			textOutput = addIabImports(javaClass);
 			textOutput = textOutput.concat(textOutput);
 		}
 		else {
 			textOutput = options.concat(textOutput);
 		}
-		return Roaster.format(changeToIab(textOutput,options));
+		return changeToIab(textOutput,options);
 
 	}
 
-	private String changeToIab(String textOutput,String options) {
+	private String changeToIab(String textOutput,String newConstructor) {
+
 		String helper= "IabHelper mHelper;";
 		String newHelper= "OpenIabHelper mHelper;";
 		String constructor = "mHelper = new IabHelper(this, base64EncodedPublicKey);";
+		
+
+		
+
 		if (textOutput.contains(helper) ){
 			textOutput = textOutput.replace(helper,newHelper);
 		}
 		if (textOutput.contains(constructor)){
-			textOutput = textOutput.replace(constructor, options);
+			textOutput = textOutput.replace(constructor, newConstructor);
 		}
+		
 		return textOutput;
 	}
 
-	public String addIabImport(JavaClassSource javaClass){
-		//Add mandatory import to use OpenIAB
+	public String addIabImports(JavaClassSource javaClass){
+		//Add mandatory imports to use OpenIAB
+		String importHelper= "teste.example.android.trivialdrivesample.util.IabHelper";
+		String importResult= "teste.example.android.trivialdrivesample.util.IabResult";
+		String importInventory= "teste.example.android.trivialdrivesample.util.Inventory";
+		String importPurchase= "teste.example.android.trivialdrivesample.util.Purchase";
+		String importIabHelper= "org.onepf.oms.appstore.googleUtils.IabHelper";
+		String importIabResult= "org.onepf.oms.appstore.googleUtils.IabResult";
+		String importIabInventory= "org.onepf.oms.appstore.googleUtils.Inventory";
+		String importIabPurchase= "org.onepf.oms.appstore.googleUtils.Purchase";
+		String[] oldImports ={importHelper,importResult,importInventory, importPurchase};
+		String[] newImports = {importIabHelper,importIabResult,importIabInventory,importIabPurchase};
+		int i=0;
+		
 		javaClass.addImport(mandatoryImport);
+		
+		while (i < newImports.length){
+
+			if(!javaClass.hasImport(newImports[i])){
+				if(javaClass.hasImport(oldImports[i])){
+					javaClass.removeImport(oldImports[i]);
+				}
+				javaClass.addImport(newImports[i]);
+			}
+			
+			i++;
+		}
+		
 		String unformattedText = javaClass.toUnformattedString();
 		String formattedText = Roaster.format(unformattedText);
 		return formattedText;
