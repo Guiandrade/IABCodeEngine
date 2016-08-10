@@ -48,22 +48,22 @@ public class TesteResource implements java.io.Serializable{
 				+ setVerifyMode
 				+ "\n// You can also specify .addStoreKeys(storeKeys map)\n\n"
 				+ helperAssign;
-		
-/*		Tentativa usando roaster que não funciona por causa do setBody()
- * 
- * javaClass.addMethod()
- *			.setPublic()
- *			.setStatic(false)
- *			.setName("setupIAB")
- *			.setReturnTypeVoid()
- *			.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder() \n\t .setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
-*/
 
+
+		javaClass.addMethod()
+		.setPublic()
+		.setStatic(false)
+		.setName("setupIAB")
+		.setReturnTypeVoid()
+		.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder(); \n\t builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
+
+		System.out.println("Body here -> "+javaClass.getMethod("setupIAB").getBody());
+		
 		if (!text.contains(mandatoryImport)
 				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
 
 			textOutput= addIabImports(javaClass);
-			
+
 		}
 		else if (!text.contains(mandatoryImport)) {
 
@@ -82,9 +82,9 @@ public class TesteResource implements java.io.Serializable{
 		String helper= "IabHelper mHelper;";
 		String newHelper= "OpenIabHelper mHelper;";
 		String constructor = "mHelper = new IabHelper(this, base64EncodedPublicKey);";
-		
 
-		
+
+
 
 		if (textOutput.contains(helper) ){
 			textOutput = textOutput.replace(helper,newHelper);
@@ -92,7 +92,7 @@ public class TesteResource implements java.io.Serializable{
 		if (textOutput.contains(constructor)){
 			textOutput = textOutput.replace(constructor, newConstructor);
 		}
-		
+
 		return textOutput;
 	}
 
@@ -109,9 +109,9 @@ public class TesteResource implements java.io.Serializable{
 		String[] oldImports ={importHelper,importResult,importInventory, importPurchase};
 		String[] newImports = {importIabHelper,importIabResult,importIabInventory,importIabPurchase};
 		int i=0;
-		
+
 		javaClass.addImport(mandatoryImport);
-		
+
 		while (i < newImports.length){
 
 			if(!javaClass.hasImport(newImports[i])){
@@ -120,10 +120,10 @@ public class TesteResource implements java.io.Serializable{
 				}
 				javaClass.addImport(newImports[i]);
 			}
-			
+
 			i++;
 		}
-		
+
 		String unformattedText = javaClass.toUnformattedString();
 		String formattedText = Roaster.format(unformattedText);
 		return formattedText;
