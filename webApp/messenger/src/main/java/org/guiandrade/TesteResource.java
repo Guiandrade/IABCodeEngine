@@ -1,11 +1,13 @@
 package org.guiandrade;
 
 import java.util.Date;
+import java.util.List;
 
 import javax.ws.rs.Path;
 
 import org.jboss.forge.roaster.Roaster;
 import org.jboss.forge.roaster.model.source.JavaClassSource;
+import org.jboss.forge.roaster.model.source.MethodSource;
 
 
 @Path("resources")
@@ -19,11 +21,13 @@ public class TesteResource implements java.io.Serializable{
 	private Date date = null;
 	private String content = null;
 	private final String mandatoryImport = "org.onepf.oms.OpenIabHelper";
-
+	private final String billingImport = "com.android.vending.billing.IInAppBillingService";
+	
 	public boolean checkContent(String text){
 		// Function that makes simple initial verifications.
+		JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, text);
 		String exampleText ="Paste your code here!";
-		if (text.equals("") || text.equals(exampleText)){
+		if (text.equals("") || text.equals(exampleText) || !javaClass.hasImport(billingImport)){
 			return false;
 		}
 		else{
@@ -35,65 +39,55 @@ public class TesteResource implements java.io.Serializable{
 		// Function that will do the translation
 
 		JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, text);
-
-		String textOutput = "";
-		String mandatoryCreation = " new OpenIabHelper.Options.Builder()";
-		String setStoreSearchStrategy = ".setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER)\n\t";
-		String setVerifyMode = ".setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN)\n";
+		String mandatoryCreation = " new OpenIabHelper.Options.Builder();";
+		String setStoreSearchStrategy = "builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);\n\t";
+		String setVerifyMode = "builder.setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN);\n";
 		String helperAssign = "mHelper = new OpenIabHelper(this, builder.build());\n";
-		String options = "\n // Please call this constructor before starting setup. \n\n OpenIabHelper.Options.Builder builder ="
+		String options = "\n OpenIabHelper.Options.Builder builder ="
 				+ mandatoryCreation
-				+ "\n\t"
 				+ setStoreSearchStrategy
 				+ setVerifyMode
-				+ "\n// You can also specify .addStoreKeys(storeKeys map)\n\n"
 				+ helperAssign;
 
-
+/*
 		javaClass.addMethod()
 		.setPublic()
 		.setStatic(false)
 		.setName("setupIAB")
 		.setReturnTypeVoid()
 		.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder(); \n\t builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
-
-		System.out.println("Body here -> "+javaClass.getMethod("setupIAB").getBody());
+*/
 		
-		if (!text.contains(mandatoryImport)
-				&& !text.contains(mandatoryCreation)) { //check OpenIabHelper import
-
-			textOutput= addIabImports(javaClass);
-
-		}
-		else if (!text.contains(mandatoryImport)) {
-
-			textOutput = addIabImports(javaClass);
-			textOutput = textOutput.concat(textOutput);
-		}
-		else {
-			textOutput = options.concat(textOutput);
-		}
-		return changeToIab(textOutput,options);
+		addIabImports(javaClass);
+		
+		return changeToIab(javaClass,options);
 
 	}
 
-	private String changeToIab(String textOutput,String newConstructor) {
-
-		String helper= "IabHelper mHelper;";
-		String newHelper= "OpenIabHelper mHelper;";
-		String constructor = "mHelper = new IabHelper(this, base64EncodedPublicKey);";
-
-
-
-
-		if (textOutput.contains(helper) ){
-			textOutput = textOutput.replace(helper,newHelper);
+	private String changeToIab(JavaClassSource javaClass,String newConstructor) {
+		// Change constructor and onIabSetupFinished(labResult result) and verify Intent
+		
+		String intent = "Intent(\"com.android.vending.billing.InAppBillingService.BIND\")" ;
+		List<MethodSource<JavaClassSource>> methods = javaClass.getMethods();
+		int constructorSuccess=0;
+		int methodSuccess=0;
+		
+		for (MethodSource m : methods){
+			if (m.isConstructor()){
+				String newBody = newConstructor.concat(m.getBody());
+				m.setBody(newBody);
+				constructorSuccess=1;
+				if (methodSuccess==1){break;}	
+			}
+			if (m.getBody().contains(intent)){
+				// Talvez necessario parsear o body para verificar que BindService usa este intent.
+				methodSuccess=1;
+				if (constructorSuccess==1){break;}	
+			}
+		// Tratar de casos de erro.
 		}
-		if (textOutput.contains(constructor)){
-			textOutput = textOutput.replace(constructor, newConstructor);
-		}
-
-		return textOutput;
+		
+		return changeToString(javaClass);
 	}
 
 	public String addIabImports(JavaClassSource javaClass){
@@ -124,6 +118,10 @@ public class TesteResource implements java.io.Serializable{
 			i++;
 		}
 
+		return changeToString(javaClass);
+	}
+	
+	public String changeToString(JavaClassSource javaClass){
 		String unformattedText = javaClass.toUnformattedString();
 		String formattedText = Roaster.format(unformattedText);
 		return formattedText;
