@@ -1,0 +1,36 @@
+Testes a realizar para a webApp:
+
+1) Imports e setup -> Falta mudar alguns imports
+	
+import teste.example.android.trivialdrivesample.util.IabHelper;
+import teste.example.android.trivialdrivesample.util.IabResult;
+import teste.example.android.trivialdrivesample.util.Inventory;
+import teste.example.android.trivialdrivesample.util.Purchase;
+		 				 ||||||      
+		 				VVVVVVVV
+import org.onepf.oms.appstore.googleUtils.IabHelper;
+import org.onepf.oms.appstore.googleUtils.IabResult;
+import org.onepf.oms.appstore.googleUtils.Inventory;
+import org.onepf.oms.appstore.googleUtils.Purchase;
+
+
+2) Método para fazer as mudanças de nomes dos métodos. -> Feito
+
+	 2.1)
+
+	     IabHelper mHelper; -> OpenIabHelper mHelper;
+
+	 2.2)
+		 mHelper = new IabHelper(this, base64EncodedPublicKey);
+		 						||||||      
+		 					   VVVVVVVV
+		 OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder()
+		                .setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER)
+		                .setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN)
+		                .addStoreKeys(InAppConfig.STORE_KEYS_MAP);
+		 mHelper = new OpenIabHelper(this, builder.build());
+
+
+
+
+3) Alteração das classes obrigatórias do OpenIAB.
