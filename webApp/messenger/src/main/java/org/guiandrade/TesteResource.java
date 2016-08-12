@@ -66,10 +66,12 @@ public class TesteResource implements java.io.Serializable{
 
 	private String changeToIab(JavaClassSource javaClass,String newConstructor) {
 		// Change constructor and onIabSetupFinished(labResult result) and verify Intent
-		
+		String method= "onIabSetupFinished";
 		String intent = "Intent(\"com.android.vending.billing.InAppBillingService.BIND\")" ;
+		String methodBody="if (result.isSuccess()) { \n\t onServiceConnected(); \n } \n else{ \n\t onServiceDisconnected(); \n }";
 		List<MethodSource<JavaClassSource>> methods = javaClass.getMethods();
 		int constructorSuccess=0;
+		int intentSuccess=0;
 		int methodSuccess=0;
 		
 		for (MethodSource m : methods){
@@ -77,13 +79,21 @@ public class TesteResource implements java.io.Serializable{
 				String newBody = newConstructor.concat(m.getBody());
 				m.setBody(newBody);
 				constructorSuccess=1;
-				if (methodSuccess==1){break;}	
+				if (intentSuccess==1 && methodSuccess==1){break;}	
 			}
 			if (m.getBody().contains(intent)){
 				// Talvez necessario parsear o body para verificar que BindService usa este intent.
-				methodSuccess=1;
-				if (constructorSuccess==1){break;}	
+				intentSuccess=1;
+				if (constructorSuccess==1 && methodSuccess==1){break;}	
 			}
+			System.out.println("name of method -> "+m.getName());
+			if (m.getName().equals(method)){
+				// Metodo esta dentro do startSetup...e necessario uma alternativa
+				m.setBody(methodBody);
+				methodSuccess=1;
+				if (constructorSuccess==1 && intentSuccess==1){break;}
+			}
+			
 		// Tratar de casos de erro.
 		}
 		
