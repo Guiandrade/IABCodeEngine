@@ -22,7 +22,7 @@ public class TesteResource implements java.io.Serializable{
 	private String content = null;
 	private final String mandatoryImport = "org.onepf.oms.OpenIabHelper";
 	private final String billingImport = "com.android.vending.billing.IInAppBillingService";
-	
+
 	public boolean checkContent(String text){
 		// Function that makes simple initial verifications.
 		JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, text);
@@ -49,17 +49,17 @@ public class TesteResource implements java.io.Serializable{
 				+ setVerifyMode
 				+ helperAssign;
 
-/*
+		/*
 		javaClass.addMethod()
 		.setPublic()
 		.setStatic(false)
 		.setName("setupIAB")
 		.setReturnTypeVoid()
 		.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder(); \n\t builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
-*/
-		
+		 */
+
 		addIabImports(javaClass);
-		
+
 		return changeToIab(javaClass,options);
 
 	}
@@ -73,7 +73,7 @@ public class TesteResource implements java.io.Serializable{
 		int constructorSuccess=0;
 		int intentSuccess=0;
 		int methodSuccess=0;
-		
+
 		for (MethodSource m : methods){
 			if (m.isConstructor()){
 				String newBody = newConstructor.concat(m.getBody());
@@ -93,11 +93,17 @@ public class TesteResource implements java.io.Serializable{
 				methodSuccess=1;
 				if (constructorSuccess==1 && intentSuccess==1){break;}
 			}
-			
-		// Tratar de casos de erro.
+
 		}
-		
-		return changeToString(javaClass);
+		if ( constructorSuccess==0 || intentSuccess==0 || methodSuccess==0){
+			System.out.println("constructorSuccess -> "+constructorSuccess);
+			System.out.println("intentSuccess -> "+intentSuccess);
+			System.out.println("methodSuccess -> "+methodSuccess);
+			return "Error.";
+		}
+		else{
+			return changeToString(javaClass);
+		}
 	}
 
 	public String addIabImports(JavaClassSource javaClass){
@@ -130,7 +136,7 @@ public class TesteResource implements java.io.Serializable{
 
 		return changeToString(javaClass);
 	}
-	
+
 	public String changeToString(JavaClassSource javaClass){
 		String unformattedText = javaClass.toUnformattedString();
 		String formattedText = Roaster.format(unformattedText);
