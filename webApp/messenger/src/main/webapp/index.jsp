@@ -48,7 +48,8 @@
 
 		<form action="index.jsp">
 			<textarea id="pastedCode" class="code">Paste your code here!</textarea>
-			<button id="data" type="button">Submit</button>
+				<button id="data" class="button" type="button" >Submit</button>
+			
 		</form>
 
 	</div>

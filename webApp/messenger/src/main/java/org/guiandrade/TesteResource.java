@@ -13,9 +13,6 @@ import org.jboss.forge.roaster.model.source.MethodSource;
 @Path("resources")
 public class TesteResource implements java.io.Serializable{
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 	private String name = null;
 	private Date date = null;
@@ -49,14 +46,6 @@ public class TesteResource implements java.io.Serializable{
 				+ setVerifyMode
 				+ helperAssign;
 
-		/*
-		javaClass.addMethod()
-		.setPublic()
-		.setStatic(false)
-		.setName("setupIAB")
-		.setReturnTypeVoid()
-		.setBody("OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder(); \n\t builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);");
-		 */
 
 		addIabImports(javaClass);
 
@@ -74,7 +63,7 @@ public class TesteResource implements java.io.Serializable{
 		int intentSuccess=0;
 		int methodSuccess=0;
 
-		for (MethodSource m : methods){
+		for (@SuppressWarnings("rawtypes") MethodSource m : methods){
 			if (m.isConstructor()){
 				String newBody = newConstructor.concat(m.getBody());
 				m.setBody(newBody);
@@ -86,7 +75,6 @@ public class TesteResource implements java.io.Serializable{
 				intentSuccess=1;
 				if (constructorSuccess==1 && methodSuccess==1){break;}	
 			}
-			System.out.println("name of method -> "+m.getName());
 			if (m.getName().equals(method)){
 				// Metodo esta dentro do startSetup...e necessario uma alternativa
 				m.setBody(methodBody);
@@ -95,15 +83,26 @@ public class TesteResource implements java.io.Serializable{
 			}
 
 		}
-		if ( constructorSuccess==0 || intentSuccess==0 || methodSuccess==0){
-			System.out.println("constructorSuccess -> "+constructorSuccess);
-			System.out.println("intentSuccess -> "+intentSuccess);
-			System.out.println("methodSuccess -> "+methodSuccess);
+		if (methodSuccess==0){
+			changeMethod(javaClass,methodBody);
+		}
+		if ( constructorSuccess==0 || intentSuccess==0 ){
 			return "Error.";
 		}
 		else{
 			return changeToString(javaClass);
 		}
+	}
+
+	public void changeMethod(JavaClassSource javaClass,String methodBeginning) {
+		String method= "startSetup";
+		String param="OnIabSetupFinishedListener";
+		String methodBody=methodBeginning+"        logDebug(\"Starting in-app billing setup.\");\r\n        mServiceConn = new ServiceConnection() {\r\n            @Override\r\n            public void onServiceDisconnected(ComponentName name) {\r\n                logDebug(\"Billing service disconnected.\");\r\n                mService = null;\r\n            }\r\n\r\n            @Override\r\n            public void onServiceConnected(ComponentName name, IBinder service) {\r\n                if (mDisposed) return;\r\n                logDebug(\"Billing service connected.\");\r\n                mService = IInAppBillingService.Stub.asInterface(service);\r\n                String packageName = mContext.getPackageName();\r\n                try {\r\n                    logDebug(\"Checking for in-app billing 3 support.\");\r\n\r\n                    int response = mService.isBillingSupported(3, packageName, ITEM_TYPE_INAPP);\r\n                    if (response != BILLING_RESPONSE_RESULT_OK) {\r\n                        if (listener != null) listener.onIabSetupFinished(new IabResult(response,\r\n                                \"Error checking for billing v3 support.\"));\r\n\r\n                        // if in-app purchases aren't supported, neither are subscriptions\r\n                        mSubscriptionsSupported = false;\r\n                        mSubscriptionUpdateSupported = false;\r\n                        return;\r\n                    } else {\r\n                        logDebug(\"In-app billing version 3 supported for \" + packageName);\r\n                    }\r\n\r\n\r\n                    response = mService.isBillingSupported(5, packageName, ITEM_TYPE_SUBS);\r\n                    if (response == BILLING_RESPONSE_RESULT_OK) {\r\n                        logDebug(\"Subscription re-signup AVAILABLE.\");\r\n                        mSubscriptionUpdateSupported = true;\r\n                    } else {\r\n                        logDebug(\"Subscription re-signup not available.\");\r\n                        mSubscriptionUpdateSupported = false;\r\n                    }\r\n\r\n                    if (mSubscriptionUpdateSupported) {\r\n                        mSubscriptionsSupported = true;\r\n                    } else {\r\n                        // check for v3 subscriptions support\r\n                        response = mService.isBillingSupported(3, packageName, ITEM_TYPE_SUBS);\r\n                        if (response == BILLING_RESPONSE_RESULT_OK) {\r\n                            logDebug(\"Subscriptions AVAILABLE.\");\r\n                            mSubscriptionsSupported = true;\r\n                        } else {\r\n                            logDebug(\"Subscriptions NOT AVAILABLE. Response: \" + response);\r\n                            mSubscriptionsSupported = false;\r\n                            mSubscriptionUpdateSupported = false;\r\n                        }\r\n                    }\r\n\r\n                    mSetupDone = true;\r\n                }\r\n                catch (RemoteException e) {\r\n                    if (listener != null) {\r\n                        listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,\r\n                                \"RemoteException while setting up in-app billing.\"));\r\n                    }\r\n                    e.printStackTrace();\r\n                    return;\r\n                }\r\n\r\n                if (listener != null) {\r\n                    listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_OK, \"Setup successful.\"));\r\n                }\r\n            }\r\n        };\r\n\r\n        Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");\r\n        serviceIntent.setPackage(\"com.android.vending\");\r\n        List<ResolveInfo> intentServices = mContext.getPackageManager().queryIntentServices(serviceIntent, 0);\r\n        if (intentServices != null && !intentServices.isEmpty()) {\r\n            mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);\r\n        }\r\n        else {\r\n            if (listener != null) {\r\n                listener.onIabSetupFinished(\r\n                        new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE,\r\n                                \"Billing service unavailable on device.\"));\r\n            }\r\n        }\r\n    }";
+
+		@SuppressWarnings("rawtypes")
+		MethodSource setup = javaClass.getMethod(method,param);
+		setup.setBody(methodBody);
+
 	}
 
 	public String addIabImports(JavaClassSource javaClass){
