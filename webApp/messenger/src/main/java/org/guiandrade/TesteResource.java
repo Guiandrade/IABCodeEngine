@@ -41,7 +41,7 @@ public class TesteResource implements java.io.Serializable{
 		String setStoreSearchStrategy = "builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);\n\t";
 		String setVerifyMode = "builder.setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN);\n";
 		String helperAssign = "mHelper = new OpenIabHelper(this, options.build());\n"; 
-		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result);\r\n              return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n         }\r\n  });";
+		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result); \r\nlogDebug(\"Billing service disconnected.\");\r\n                mService = null;\r\n              return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n                          }\r\n  });";
 		String options = "\n OpenIabHelper.Options options ="
 				+ mandatoryCreation
 				+ setStoreSearchStrategy
