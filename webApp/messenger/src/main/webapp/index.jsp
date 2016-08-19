@@ -34,6 +34,11 @@
 
 
 <body>
+<style>
+body {
+    background-color: lightblue;
+}
+</style>
 	<h1>IAB Code Migration Engine</h1>
 	
 	<div style="text-align: left">
