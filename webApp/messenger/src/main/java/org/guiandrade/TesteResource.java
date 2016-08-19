@@ -40,8 +40,9 @@ public class TesteResource implements java.io.Serializable{
 		String mandatoryCreation = " new OpenIabHelper.Options.Builder();";
 		String setStoreSearchStrategy = "builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);\n\t";
 		String setVerifyMode = "builder.setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN);\n";
-		String helperAssign = "mHelper = new OpenIabHelper(this, options.build());\n"; 
-		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result); \r\nlogDebug(\"Billing service disconnected.\");\r\n                mService = null;\r\n              return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n                          }\r\n  });";
+		String helperAssign = "mHelper = new OpenIabHelper(this, options.build());\n";
+		String checkServiceConnected = checkServiceConnected(javaClass); 
+		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result); \r\n            return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n                          }\r\n  });";
 		String options = "\n OpenIabHelper.Options options ="
 				+ mandatoryCreation
 				+ setStoreSearchStrategy
@@ -54,6 +55,23 @@ public class TesteResource implements java.io.Serializable{
 
 		return changeToIab(javaClass,options);
 
+	}
+
+	public String checkServiceConnected(JavaClassSource javaClass) {
+		String method = "onServiceConnected";
+		String param = "ComponentName";
+		
+		if (javaClass.getMethod(method,param) != null){
+			return javaClass.getMethod(method,param).getBody();
+		}
+		else{
+			return "cenas";
+		}
+	}
+	
+	public String checkServiceDisconnected(JavaClassSource javaClass) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	private String changeToIab(JavaClassSource javaClass,String newConstructor) {
