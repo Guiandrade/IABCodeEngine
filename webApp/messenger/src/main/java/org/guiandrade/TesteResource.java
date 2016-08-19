@@ -20,15 +20,30 @@ public class TesteResource implements java.io.Serializable{
 	private final String mandatoryImport = "org.onepf.oms.OpenIabHelper";
 	private final String billingImport = "com.android.vending.billing.IInAppBillingService";
 
-	public boolean checkContent(String text){
+	public String checkContent(String text){
 		// Function that makes simple initial verifications.
 		JavaClassSource javaClass = Roaster.parse(JavaClassSource.class, text);
 		String exampleText ="Paste your code here!";
-		if (text.equals("") || text.equals(exampleText) || !javaClass.hasImport(billingImport)){
-			return false;
+		String errorNull="*Error : You didn't paste any code.*";
+		String errorText="*Error : Please paste your code.*";
+		String errorImport="*Error : Your class must have the com.android.vending.billing.IInAppBillingService import.*";
+		String success = "success";
+		
+		if (text.equals("")){
+			return errorNull ;
 		}
+	
+		if(text.equals(exampleText)){
+			return errorText;
+			}
+		
+		if(!javaClass.hasImport(billingImport)){
+			return errorImport;
+		
+		}
+	
 		else{
-			return true;
+			return success;
 		}
 	}
 
