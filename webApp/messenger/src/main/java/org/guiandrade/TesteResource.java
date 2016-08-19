@@ -41,8 +41,9 @@ public class TesteResource implements java.io.Serializable{
 		String setStoreSearchStrategy = "builder.setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER);\n\t";
 		String setVerifyMode = "builder.setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN);\n";
 		String helperAssign = "mHelper = new OpenIabHelper(this, options.build());\n";
-		String checkServiceConnected = checkServiceConnected(javaClass); 
-		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result); \r\n            return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n                          }\r\n  });";
+		String checkServiceConnected = checkServiceConnected(javaClass);
+		String checkServiceDisconnected = checkServiceDisconnected(javaClass); 
+		String setupIab= "  mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {\r\n      public void onIabSetupFinished(IabResult result) {\r\n          if (!result.isSuccess()) {\r\n              complain(\"Problem setting up in-app billing: \" + result); \r\n"+checkServiceDisconnected+"            return;\r\n          }\r\n              mHelper.queryInventoryAsync(mGotInventoryListener);\r\n"+checkServiceConnected+"                          }\r\n  });";
 		String options = "\n OpenIabHelper.Options options ="
 				+ mandatoryCreation
 				+ setStoreSearchStrategy
@@ -58,6 +59,7 @@ public class TesteResource implements java.io.Serializable{
 	}
 
 	public String checkServiceConnected(JavaClassSource javaClass) {
+		String defaultBody= "                if (mDisposed) return;\r\n                logDebug(\"Billing service connected.\");\r\n                mService = IInAppBillingService.Stub.asInterface(service);\r\n                String packageName = mContext.getPackageName();\r\n                try {\r\n                    logDebug(\"Checking for in-app billing 3 support.\");\r\n\r\n                    int response = mService.isBillingSupported(3, packageName, ITEM_TYPE_INAPP);\r\n                    if (response != BILLING_RESPONSE_RESULT_OK) {\r\n                        if (listener != null) listener.onIabSetupFinished(new IabResult(response,\r\n                                \"Error checking for billing v3 support.\"));\r\n\r\n                        // if in-app purchases aren't supported, neither are subscriptions\r\n                        mSubscriptionsSupported = false;\r\n                        mSubscriptionUpdateSupported = false;\r\n                        return;\r\n                    } else {\r\n                        logDebug(\"In-app billing version 3 supported for \" + packageName);\r\n                    }\r\n\r\n\r\n                    response = mService.isBillingSupported(5, packageName, ITEM_TYPE_SUBS);\r\n                    if (response == BILLING_RESPONSE_RESULT_OK) {\r\n                        logDebug(\"Subscription re-signup AVAILABLE.\");\r\n                        mSubscriptionUpdateSupported = true;\r\n                    } else {\r\n                        logDebug(\"Subscription re-signup not available.\");\r\n                        mSubscriptionUpdateSupported = false;\r\n                    }\r\n\r\n                    if (mSubscriptionUpdateSupported) {\r\n                        mSubscriptionsSupported = true;\r\n                    } else {\r\n                        // check for v3 subscriptions support\r\n                        response = mService.isBillingSupported(3, packageName, ITEM_TYPE_SUBS);\r\n                        if (response == BILLING_RESPONSE_RESULT_OK) {\r\n                            logDebug(\"Subscriptions AVAILABLE.\");\r\n                            mSubscriptionsSupported = true;\r\n                        } else {\r\n                            logDebug(\"Subscriptions NOT AVAILABLE. Response: \" + response);\r\n                            mSubscriptionsSupported = false;\r\n                            mSubscriptionUpdateSupported = false;\r\n                        }\r\n                    }\r\n\r\n                    mSetupDone = true;\r\n                }\r\n                catch (RemoteException e) {\r\n                    if (listener != null) {\r\n                        listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,\r\n                                \"RemoteException while setting up in-app billing.\"));\r\n                    }\r\n                    e.printStackTrace();\r\n                    return;\r\n                }\r\n\r\n                if (listener != null) {\r\n                    listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_OK, \"Setup successful.\"));\r\n                }";
 		String method = "onServiceConnected";
 		String param = "ComponentName";
 		
@@ -65,13 +67,20 @@ public class TesteResource implements java.io.Serializable{
 			return javaClass.getMethod(method,param).getBody();
 		}
 		else{
-			return "cenas";
+			return defaultBody;
 		}
 	}
 	
 	public String checkServiceDisconnected(JavaClassSource javaClass) {
-		// TODO Auto-generated method stub
-		return null;
+		String defaultBody = "                logDebug(\"Billing service disconnected.\");\r\n                mService = null;\r\n";
+		String method = "onServiceDisconnected";
+		String param = "ComponentName";
+		if (javaClass.getMethod(method,param) != null){
+			return javaClass.getMethod(method,param).getBody();
+		}
+		else{
+			return defaultBody;
+		}
 	}
 
 	private String changeToIab(JavaClassSource javaClass,String newConstructor) {
