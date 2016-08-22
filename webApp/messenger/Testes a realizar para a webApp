@@ -1,36 +1,267 @@
 Testes a realizar para a webApp:
 
-1) Imports e setup -> Falta mudar alguns imports
-	
-import teste.example.android.trivialdrivesample.util.IabHelper;
-import teste.example.android.trivialdrivesample.util.IabResult;
-import teste.example.android.trivialdrivesample.util.Inventory;
-import teste.example.android.trivialdrivesample.util.Purchase;
-		 				 ||||||      
-		 				VVVVVVVV
-import org.onepf.oms.appstore.googleUtils.IabHelper;
-import org.onepf.oms.appstore.googleUtils.IabResult;
-import org.onepf.oms.appstore.googleUtils.Inventory;
-import org.onepf.oms.appstore.googleUtils.Purchase;
+1) Teste de classe com Import 
+
+/////////////////////////////// START TEST /////////////////////////////////////////////////
+
+package teste.example.android.trivialdrivesample.util;
+
+import android.app.Activity;
+import android.app.PendingIntent;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentSender.SendIntentException;
+import android.content.ServiceConnection;
+import android.content.pm.ResolveInfo;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.RemoteException;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.android.vending.billing.IInAppBillingService;
+
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class IabHelper {
+    // Is debug logging enabled?
+    boolean mDebugLog = false;
+    String mDebugTag = "IabHelper";
+
+    // Is setup done?
+    boolean mSetupDone = false;
+
+    // Has this object been disposed of? (If so, we should ignore callbacks, etc)
+    boolean mDisposed = false;
+
+    // Do we need to dispose this object after an in-progress asynchronous operation?
+    boolean mDisposeAfterAsync = false;
+
+    // Are subscriptions supported?
+    boolean mSubscriptionsSupported = false;
+
+    // Is subscription update supported?
+    boolean mSubscriptionUpdateSupported = false;
+
+    // Is an asynchronous operation in progress?
+    // (only one at a time can be in progress)
+    boolean mAsyncInProgress = false;
+
+    // Ensure atomic access to mAsyncInProgress and mDisposeAfterAsync.
+    private final Object mAsyncInProgressLock = new Object();
+
+    // (for logging/debugging)
+    // if mAsyncInProgress == true, what asynchronous operation is in progress?
+    String mAsyncOperation = "";
+
+    // Context we were passed during initialization
+    Context mContext;
+
+    // Connection to the service
+    IInAppBillingService mService;
+    ServiceConnection mServiceConn;
+
+    // The request code used to launch purchase flow
+    int mRequestCode;
+
+    // The item type of the current purchase flow
+    String mPurchasingItemType;
+
+    // Public key for verifying signature, in base64 encoding
+    String mSignatureBase64 = null;
+
+    // Billing response codes
+    public static final int BILLING_RESPONSE_RESULT_OK = 0;
+    public static final int BILLING_RESPONSE_RESULT_USER_CANCELED = 1;
+    public static final int BILLING_RESPONSE_RESULT_SERVICE_UNAVAILABLE = 2;
+    public static final int BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE = 3;
+    public static final int BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE = 4;
+    public static final int BILLING_RESPONSE_RESULT_DEVELOPER_ERROR = 5;
+    public static final int BILLING_RESPONSE_RESULT_ERROR = 6;
+    public static final int BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED = 7;
+    public static final int BILLING_RESPONSE_RESULT_ITEM_NOT_OWNED = 8;
+
+    // IAB Helper error codes
+    public static final int IABHELPER_ERROR_BASE = -1000;
+    public static final int IABHELPER_REMOTE_EXCEPTION = -1001;
+    public static final int IABHELPER_BAD_RESPONSE = -1002;
+    public static final int IABHELPER_VERIFICATION_FAILED = -1003;
+    public static final int IABHELPER_SEND_INTENT_FAILED = -1004;
+    public static final int IABHELPER_USER_CANCELLED = -1005;
+    public static final int IABHELPER_UNKNOWN_PURCHASE_RESPONSE = -1006;
+    public static final int IABHELPER_MISSING_TOKEN = -1007;
+    public static final int IABHELPER_UNKNOWN_ERROR = -1008;
+    public static final int IABHELPER_SUBSCRIPTIONS_NOT_AVAILABLE = -1009;
+    public static final int IABHELPER_INVALID_CONSUMPTION = -1010;
+    public static final int IABHELPER_SUBSCRIPTION_UPDATE_NOT_AVAILABLE = -1011;
+
+    // Keys for the responses from InAppBillingService
+    public static final String RESPONSE_CODE = "RESPONSE_CODE";
+    public static final String RESPONSE_GET_SKU_DETAILS_LIST = "DETAILS_LIST";
+    public static final String RESPONSE_BUY_INTENT = "BUY_INTENT";
+    public static final String RESPONSE_INAPP_PURCHASE_DATA = "INAPP_PURCHASE_DATA";
+    public static final String RESPONSE_INAPP_SIGNATURE = "INAPP_DATA_SIGNATURE";
+    public static final String RESPONSE_INAPP_ITEM_LIST = "INAPP_PURCHASE_ITEM_LIST";
+    public static final String RESPONSE_INAPP_PURCHASE_DATA_LIST = "INAPP_PURCHASE_DATA_LIST";
+    public static final String RESPONSE_INAPP_SIGNATURE_LIST = "INAPP_DATA_SIGNATURE_LIST";
+    public static final String INAPP_CONTINUATION_TOKEN = "INAPP_CONTINUATION_TOKEN";
+
+    // Item types
+    public static final String ITEM_TYPE_INAPP = "inapp";
+    public static final String ITEM_TYPE_SUBS = "subs";
+
+    // some fields on the getSkuDetails response bundle
+    public static final String GET_SKU_DETAILS_ITEM_LIST = "ITEM_ID_LIST";
+    public static final String GET_SKU_DETAILS_ITEM_TYPE_LIST = "ITEM_TYPE_LIST";
+
+    public IabHelper(Context ctx, String base64PublicKey) {
+        mContext = ctx.getApplicationContext();
+        mSignatureBase64 = base64PublicKey;
+    }
+
+    /**
+     * Enables or disable debug logging through LogCat.
+     */
+    public void enableDebugLogging(boolean enable, String tag) {
+        checkNotDisposed();
+        mDebugLog = enable;
+        mDebugTag = tag;
+    }
+
+    public void enableDebugLogging(boolean enable) {
+        checkNotDisposed();
+        mDebugLog = enable;
+    }
+
+    public interface OnIabSetupFinishedListener {
+        /**
+         * Called to notify that setup is complete.
+         *
+         * @param result The result of the setup process.
+         */
+        void onIabSetupFinished(IabResult result);
+    }
+
+    public void startSetup(final OnIabSetupFinishedListener listener) {
+        // If already set up, can't do it again.
+        checkNotDisposed();
+        if (mSetupDone) throw new IllegalStateException("IAB helper is already set up.");
 
 
-2) Método para fazer as mudanças de nomes dos métodos. -> Feito
+        mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+            public void onIabSetupFinished(IabResult result) {
+                Log.d(TAG, "Setup finished.");
 
-	 2.1)
+                if (!result.isSuccess()) {
+                    
+                     if (listener != null) {
+                        listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,
+                                "RemoteException while setting up in-app billing."));
+                    }
+                     
+                    return;
+                }
 
-	     IabHelper mHelper; -> OpenIabHelper mHelper;
+                
+               mSetupDone = true;
+                if (listener != null) {
+                    listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_OK, "Setup successful."));
+                }
+                
+            }
+        });
+        logDebug("Starting in-app billing setup.");
+        mServiceConn = new ServiceConnection() {
+            @Override
+            public void onServiceDisconnected(ComponentName name) {
+                logDebug("Billing service disconnected.");
+                mService = null;
+            }
 
-	 2.2)
-		 mHelper = new IabHelper(this, base64EncodedPublicKey);
-		 						||||||      
-		 					   VVVVVVVV
-		 OpenIabHelper.Options.Builder builder = new OpenIabHelper.Options.Builder()
-		                .setStoreSearchStrategy(OpenIabHelper.Options.SEARCH_STRATEGY_INSTALLER)
-		                .setVerifyMode(OpenIabHelper.Options.VERIFY_ONLY_KNOWN)
-		                .addStoreKeys(InAppConfig.STORE_KEYS_MAP);
-		 mHelper = new OpenIabHelper(this, builder.build());
+            @Override
+            public void onServiceConnected(ComponentName name, IBinder service) {
+                if (mDisposed) return;
+                logDebug("Billing service connected.");
+                mService = IInAppBillingService.Stub.asInterface(service);
+                String packageName = mContext.getPackageName();
+                try {
+                    logDebug("Checking for in-app billing 3 support.");
+
+                    int response = mService.isBillingSupported(3, packageName, ITEM_TYPE_INAPP);
+                    if (response != BILLING_RESPONSE_RESULT_OK) {
+                        if (listener != null) listener.onIabSetupFinished(new IabResult(response,
+                                "Error checking for billing v3 support."));
+
+                        // if in-app purchases aren't supported, neither are subscriptions
+                        mSubscriptionsSupported = false;
+                        mSubscriptionUpdateSupported = false;
+                        return;
+                    } else {
+                        logDebug("In-app billing version 3 supported for " + packageName);
+                    }
 
 
+                    response = mService.isBillingSupported(5, packageName, ITEM_TYPE_SUBS);
+                    if (response == BILLING_RESPONSE_RESULT_OK) {
+                        logDebug("Subscription re-signup AVAILABLE.");
+                        mSubscriptionUpdateSupported = true;
+                    } else {
+                        logDebug("Subscription re-signup not available.");
+                        mSubscriptionUpdateSupported = false;
+                    }
 
+                    if (mSubscriptionUpdateSupported) {
+                        mSubscriptionsSupported = true;
+                    } else {
+                        // check for v3 subscriptions support
+                        response = mService.isBillingSupported(3, packageName, ITEM_TYPE_SUBS);
+                        if (response == BILLING_RESPONSE_RESULT_OK) {
+                            logDebug("Subscriptions AVAILABLE.");
+                            mSubscriptionsSupported = true;
+                        } else {
+                            logDebug("Subscriptions NOT AVAILABLE. Response: " + response);
+                            mSubscriptionsSupported = false;
+                            mSubscriptionUpdateSupported = false;
+                        }
+                    }
 
-3) Alteração das classes obrigatórias do OpenIAB.
+                    mSetupDone = true;
+                }
+                catch (RemoteException e) {
+                    if (listener != null) {
+                        listener.onIabSetupFinished(new IabResult(IABHELPER_REMOTE_EXCEPTION,
+                                "RemoteException while setting up in-app billing."));
+                    }
+                    e.printStackTrace();
+                    return;
+                }
+
+                if (listener != null) {
+                    listener.onIabSetupFinished(new IabResult(BILLING_RESPONSE_RESULT_OK, "Setup successful."));
+                }
+            }
+        };
+
+        Intent serviceIntent = new Intent("com.android.vending.billing.InAppBillingService.BIND");
+        serviceIntent.setPackage("com.android.vending");
+        List<ResolveInfo> intentServices = mContext.getPackageManager().queryIntentServices(serviceIntent, 0);
+        if (intentServices != null && !intentServices.isEmpty()) {
+            mContext.bindService(serviceIntent, mServiceConn, Context.BIND_AUTO_CREATE);
+        }
+        else {
+            if (listener != null) {
+                listener.onIabSetupFinished(
+                        new IabResult(BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE,
+                                "Billing service unavailable on device."));
+            }
+        }
+    }
+
+}
+
+///////////////////////////////// END TEST /////////////////////////////////////////////////
