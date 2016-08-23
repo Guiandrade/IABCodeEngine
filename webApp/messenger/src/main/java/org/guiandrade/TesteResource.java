@@ -10,7 +10,7 @@ import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.jboss.forge.roaster.model.source.MethodSource;
 
 
-@Path("resources")
+@Path("testeresources")
 public class TesteResource implements java.io.Serializable{
 
 	private static final long serialVersionUID = 1L;
