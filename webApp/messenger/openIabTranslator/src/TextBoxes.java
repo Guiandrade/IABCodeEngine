@@ -1,5 +1,5 @@
 /**
- * Created by guilhermeandraade on 10-08-2016.
+ * Created by Guilherme Andrade on 10-08-2016.
  */
 
 import com.intellij.codeInsight.completion.AllClassesGetter;
@@ -12,7 +12,7 @@ import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.Processor;
 
-import java.util.Arrays;
+
 
 
 public class TextBoxes extends AnAction {
@@ -37,13 +37,18 @@ public class TextBoxes extends AnAction {
         Processor<PsiClass> processor = new Processor<PsiClass>() {
             @Override
             public boolean process(PsiClass psiClass) {
-                // Do work here
+
                 PsiJavaFile javaFile;
                 javaFile = (PsiJavaFile) psiClass.getContainingFile();
-                PsiImportList list = javaFile.getImportList();
-                PsiImportStatementBase[] imports = list.getAllImportStatements();
-                System.out.println(Arrays.toString(imports));
 
+                // Import
+                changeImport(javaFile,project);
+
+                //Package
+                changePackage(javaFile,project);
+
+
+                //Fields and Methods
                 psiClass.accept(new PsiRecursiveElementWalkingVisitor() {
                     @Override
                     public void visitElement(PsiElement element) {
@@ -79,6 +84,45 @@ public class TextBoxes extends AnAction {
         
     }
 
+    public void changePackage(PsiJavaFile javaFile, Project project){
+        PsiPackageStatement packStatement = javaFile.getPackageStatement();
+        PsiPackageStatement newStatement;
+        String oldPackage = "package com.android.vending.billing;";
+        String newPackage = "org.onepf.oms";
+
+        if(packStatement == null){
+
+            newStatement = JavaPsiFacade.getElementFactory(project).createPackageStatement(newPackage);
+            javaFile.add(newStatement);
+            return;
+
+        }
+
+        String packageName = packStatement.getText();
+
+        if (packageName.equals(oldPackage)){
+            newStatement = JavaPsiFacade.getElementFactory(project).createPackageStatement(newPackage);
+            packStatement.replace(newStatement);
+        }
+
+    }
+
+    public void changeImport(PsiJavaFile javaFile, Project project){
+        PsiImportList list = javaFile.getImportList();
+        PsiImportStatementBase[] imports = list.getAllImportStatements();
+        String oldBillingImport  = "import com.android.vending.billing.IInAppBillingService;";
+        String newBillingImport= "import org.onepf.oms.IOpenInAppBillingService;";
+        for (PsiImportStatementBase importStatement: imports){
+
+            String textImport = importStatement.getText();
+            if (textImport.equals(oldBillingImport)){
+                PsiImportStatement newStatement;
+                newStatement = JavaPsiFacade.getElementFactory(project).createImportStatementOnDemand(newBillingImport);
+                importStatement.replace(newStatement);
+            }
+        }
+    }
+
     public boolean isMethod(PsiElement element){
         if (element instanceof PsiMethod){
             return true;
@@ -105,4 +149,5 @@ public class TextBoxes extends AnAction {
     }
 
 }
+
 
