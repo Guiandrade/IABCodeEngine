@@ -1,18 +1,14 @@
-/**
- * Created by Guilherme Andrade on 10-08-2016.
- */
 
 import com.intellij.codeInsight.completion.AllClassesGetter;
 import com.intellij.codeInsight.completion.PlainPrefixMatcher;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.command.WriteCommandAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.util.Processor;
-
-
 
 
 public class TextBoxes extends AnAction {
@@ -26,9 +22,7 @@ public class TextBoxes extends AnAction {
         // super("Text _Boxes","Item description",IconLoader.getIcon("/Mypackage/icon.png"));
     }
 
-
-
-
+    IOpenInAppBillingService mService;
 
     public void actionPerformed(AnActionEvent event) {
         Project project = event.getData(PlatformDataKeys.PROJECT);
@@ -53,14 +47,16 @@ public class TextBoxes extends AnAction {
                     @Override
                     public void visitElement(PsiElement element) {
                         if (isMethod(element)) {
-                            //System.out.println("MÉTODO \n"+element.getText());
+                            //Change intents
                         }
-                        else if (isField(element)){
-                            System.out.println("FIELD \n"+element.getText());
-                        }
-
                         else {
-                            super.visitElement(element);
+                            if (isField(element)) {
+                                PsiField field = (PsiField) element;
+                                changeField(javaFile,project,field);
+
+                            } else {
+                                super.visitElement(element);
+                            }
                         }
                     }
                 });
@@ -76,33 +72,22 @@ public class TextBoxes extends AnAction {
                 processor
         );
 
-/*
-        String txt= Messages.showInputDialog(project, "What is your name?", "Input your name", Messages.getQuestionIcon());
-        showMessageDialog(project, "Hello, " + txt + "!\n I am glad to see you.", "Information", Messages.getInformationIcon());
-*/
-
-        
     }
 
     public void changePackage(PsiJavaFile javaFile, Project project){
         PsiPackageStatement packStatement = javaFile.getPackageStatement();
-        PsiPackageStatement newStatement;
         String oldPackage = "package com.android.vending.billing;";
-        String newPackage = "org.onepf.oms";
-
         if(packStatement == null){
-
-            newStatement = JavaPsiFacade.getElementFactory(project).createPackageStatement(newPackage);
-            javaFile.add(newStatement);
+            // do nothing
             return;
-
         }
 
         String packageName = packStatement.getText();
 
         if (packageName.equals(oldPackage)){
-            newStatement = JavaPsiFacade.getElementFactory(project).createPackageStatement(newPackage);
-            packStatement.replace(newStatement);
+            //Fix suggested to an error that appeared when not using Runnable
+            Runnable modificationRunnable= createPackageRunnable(javaFile,project);
+            WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
         }
 
     }
@@ -111,17 +96,81 @@ public class TextBoxes extends AnAction {
         PsiImportList list = javaFile.getImportList();
         PsiImportStatementBase[] imports = list.getAllImportStatements();
         String oldBillingImport  = "import com.android.vending.billing.IInAppBillingService;";
-        String newBillingImport= "import org.onepf.oms.IOpenInAppBillingService;";
-        for (PsiImportStatementBase importStatement: imports){
 
+        for (PsiImportStatementBase importStatement: imports){
             String textImport = importStatement.getText();
             if (textImport.equals(oldBillingImport)){
-                PsiImportStatement newStatement;
-                newStatement = JavaPsiFacade.getElementFactory(project).createImportStatementOnDemand(newBillingImport);
-                importStatement.replace(newStatement);
+                Runnable modificationRunnable= createImportRunnable(javaFile,project,importStatement);
+                WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+
             }
         }
     }
+
+    public void changeField(PsiJavaFile javaFile, Project project,PsiField field){
+        String fieldName="mService";
+        if (field.getName().equals(fieldName)){
+            Runnable modificationRunnable= createFieldRunnable(javaFile,project,field);
+            WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+
+        }
+    }
+
+    public void addField(PsiJavaFile javaFile, Project project,PsiField field){
+        String newFieldValue="IOpenInAppBillingService mService;";
+        PsiField newField;
+        newField = JavaPsiFacade.getElementFactory(project).createFieldFromText(newFieldValue,javaFile);
+        field.replace(newField);
+            }
+
+
+    public void addPackage(PsiJavaFile javaFile,Project project){
+        //Adds package name
+        String newPackage = "org.onepf.oms";
+        javaFile.setPackageName(newPackage);
+    }
+
+    public void addImport(PsiJavaFile javaFile, Project project,PsiImportStatementBase importStatement) {
+        String newBillingImport= "org.onepf.oms.IOpenInAppBillingService";
+        PsiImportStatement newStatement;
+        newStatement = JavaPsiFacade.getElementFactory(project).createImportStatementOnDemand(newBillingImport);
+        importStatement.replace(newStatement);
+    }
+
+    private Runnable createPackageRunnable(PsiJavaFile javaFile,Project project){
+
+        Runnable aRunnable = new Runnable() {
+            @Override
+            public void run() {
+                addPackage(javaFile,project);
+            }
+        };
+        return aRunnable;
+    }
+
+    private Runnable createImportRunnable(PsiJavaFile javaFile,Project project,PsiImportStatementBase importStatement){
+
+        Runnable aRunnable = new Runnable() {
+            @Override
+            public void run() {
+                addImport(javaFile,project,importStatement);
+            }
+        };
+        return aRunnable;
+    }
+
+    private Runnable createFieldRunnable(PsiJavaFile javaFile,Project project,PsiField field){
+
+        Runnable aRunnable = new Runnable() {
+            @Override
+            public void run() {
+                addField(javaFile,project,field);
+            }
+        };
+        return aRunnable;
+    }
+
+
 
     public boolean isMethod(PsiElement element){
         if (element instanceof PsiMethod){
@@ -149,5 +198,3 @@ public class TextBoxes extends AnAction {
     }
 
 }
-
-
