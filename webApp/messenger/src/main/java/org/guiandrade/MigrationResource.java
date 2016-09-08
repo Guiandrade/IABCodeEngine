@@ -17,7 +17,7 @@ public class MigrationResource {
 	private final String oldBillingImport  = "com.android.vending.billing.IInAppBillingService";
 	private final String newBillingImport= "org.onepf.oms.IOpenInAppBillingService";
 	private final String oldPermission = "<uses-permission android:name=\"com.android.vending.BILLING\" />";
-	private final String newPermission = "<uses-permission android:name=\"com.android.vending.BILLING\" />";
+	private final String newPermission = "<uses-permission android:name=\"org.onepf.openiab.permission.BILLING\" />";
 
 	public String checkContent(String text){
 		// Check if there is an error with the code and the it's type (XML or Java)
