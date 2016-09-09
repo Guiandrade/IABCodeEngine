@@ -20,6 +20,19 @@ public class TextBoxes extends AnAction {
     // (optionally, you can specify the menu description and an icon to display next to the menu item).
     // You can omit this constructor when registering the action in the plugin.xml file.
 
+    //Old Values
+    private final String oldPackage = "package com.android.vending.billing;";
+    private final String oldBillingImport  = "import com.android.vending.billing.IInAppBillingService;";
+    private final String oldIntent="Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
+    private final String oldSetPackage="serviceIntent.setPackage(\"com.android.vending\");";
+    private final String fieldName="mService";
+
+    //New Values
+    private final String newPackage = "org.onepf.oms";
+    private final String newBillingImport= "org.onepf.oms.IOpenInAppBillingService";
+    private final String newIntent="Intent serviceIntent = new Intent(\"org.onepf.oms.billing.BIND\");";
+    private final String newSetPackage="\nserviceIntent.setPackage(\"cm.aptoide.pt\");";
+    private final String newFieldValue="IOpenInAppBillingService mService;";
 
 
     private List<PsiField> _fieldsToChange = new ArrayList<PsiField>();
@@ -52,18 +65,13 @@ public class TextBoxes extends AnAction {
                 // Import
                 changeImport(javaFile,project);
 
-                //Package
-                changePackage(javaFile,project);
-
 
                 //Fields and Methods
                 psiClass.accept(new PsiRecursiveElementWalkingVisitor() {
                     @Override
                     public void visitElement(PsiElement element) {
                         //Elements need to be saved and changed after iteration
-                        String fieldName="mService";
-                        String oldIntent="Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
-                        String oldSetPackage="serviceIntent.setPackage(\"com.android.vending\");";
+
 
                         if (isMethod(element)) {
                             //Methods
@@ -72,7 +80,6 @@ public class TextBoxes extends AnAction {
                             if (body != null){
                                 String text = body.getText();
                                 if(text.contains(oldIntent) && text.contains(oldSetPackage)){
-                                    System.out.println("CHEGA PARA ALTERAR O INTENT E O SETPACKAGE.");
                                     getMethodsToChange().add(method);
                                     getHashMap().put(method,getJavaFile());
                                 }
@@ -83,7 +90,9 @@ public class TextBoxes extends AnAction {
                             if (isField(element)) {
                                 //Fields
                                 PsiField field = (PsiField) element;
-                                if (field.getName().equals(fieldName)) {
+                                String fieldType = field.getType().getCanonicalText();
+                                String newFieldType = "IOpenInAppBillingService";
+                                if (field.getName().equals(fieldName) && !fieldType.equals(newFieldType)) {
                                     getFieldsToChange().add(field);
                                     getHashMap().put(field,getJavaFile());
                                 }
@@ -108,7 +117,6 @@ public class TextBoxes extends AnAction {
 
         //Changes Elements saved on iteration
         changeElements();
-
     }
 
     public void changeElements(){
@@ -130,7 +138,7 @@ public class TextBoxes extends AnAction {
 
     public void changePackage(PsiJavaFile javaFile, Project project){
         PsiPackageStatement packStatement = javaFile.getPackageStatement();
-        String oldPackage = "package com.android.vending.billing;";
+
         if(packStatement == null){
             // do nothing
             return;
@@ -149,7 +157,7 @@ public class TextBoxes extends AnAction {
     public void changeImport(PsiJavaFile javaFile, Project project){
         PsiImportList list = javaFile.getImportList();
         PsiImportStatementBase[] imports = list.getAllImportStatements();
-        String oldBillingImport  = "import com.android.vending.billing.IInAppBillingService;";
+
 
         for (PsiImportStatementBase importStatement: imports){
             String textImport = importStatement.getText();
@@ -173,7 +181,6 @@ public class TextBoxes extends AnAction {
     }
 
     public void addField(PsiJavaFile javaFile, Project project,PsiField field){
-        String newFieldValue="IOpenInAppBillingService mService;";
         PsiField newField;
         newField = JavaPsiFacade.getElementFactory(project).createFieldFromText(newFieldValue,javaFile);
         field.replace(newField);
@@ -182,22 +189,16 @@ public class TextBoxes extends AnAction {
 
     public void addPackage(PsiJavaFile javaFile,Project project){
         //Adds package name
-        String newPackage = "org.onepf.oms";
         javaFile.setPackageName(newPackage);
     }
 
     public void addImport(PsiJavaFile javaFile, Project project,PsiImportStatementBase importStatement) {
-        String newBillingImport= "org.onepf.oms.IOpenInAppBillingService";
         PsiImportStatement newStatement;
         newStatement = JavaPsiFacade.getElementFactory(project).createImportStatementOnDemand(newBillingImport);
         importStatement.replace(newStatement);
     }
 
     public void addMethod(PsiJavaFile javaFile, Project project,PsiMethod method){
-        String oldIntent="Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
-        String oldSetPackage="serviceIntent.setPackage(\"com.android.vending\");";
-        String newIntent="Intent serviceIntent = new Intent(\"org.onepf.oms.billing.BIND\");";
-        String newSetPackage="\nserviceIntent.setPackage(\"cm.aptoide.pt\");";
         PsiCodeBlock body = method.getBody();
         String bodyText = body.getText();
 
