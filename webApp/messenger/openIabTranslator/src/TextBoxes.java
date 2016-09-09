@@ -194,10 +194,10 @@ public class TextBoxes extends AnAction {
     }
 
     public void addMethod(PsiJavaFile javaFile, Project project,PsiMethod method){
-        String oldIntent="Intent serviceIntent=new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
+        String oldIntent="Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
         String oldSetPackage="serviceIntent.setPackage(\"com.android.vending\");";
         String newIntent="Intent serviceIntent = new Intent(\"org.onepf.oms.billing.BIND\");";
-        String newSetPackage="\r\nserviceIntent.setPackage(\"cm.aptoide.pt\");";
+        String newSetPackage="\nserviceIntent.setPackage(\"cm.aptoide.pt\");";
         PsiCodeBlock body = method.getBody();
         String bodyText = body.getText();
 
@@ -305,3 +305,4 @@ public class TextBoxes extends AnAction {
     }
 
 }
+

@@ -31,11 +31,7 @@
   <actions>
     <group id="openIabTranslator.SampleMenu" text="Plugins" description="Menu for new plugins.">
       <add-to-group group-id="MainMenu" anchor="last"  />
-<<<<<<< HEAD
       <action id="openIabTranslator.Textboxes" class="TextBoxes" text="Code Translator" description="Translates code by changing .java files to the new In-App Billing interface." />
-=======
-      <action id="openIabTranslator.Textboxes" class="TextBoxes" text="Code Translator" description="Translates code by changing .java files the new In-App Billing interface." />
->>>>>>> 161b59fa68d4c5c7d7b53a4c21817a34a961c91d
     </group>  </actions>
 
 </idea-plugin>
