@@ -1,18 +1,30 @@
 
 import com.intellij.codeInsight.completion.AllClassesGetter;
 import com.intellij.codeInsight.completion.PlainPrefixMatcher;
+import com.intellij.ide.highlighter.XmlFileType;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
+import com.intellij.psi.search.FileTypeIndex;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.xml.XmlElement;
+import com.intellij.psi.xml.XmlFile;
+import com.intellij.psi.xml.XmlTag;
 import com.intellij.util.Processor;
+import com.intellij.util.indexing.FileBasedIndex;
+import com.sun.xml.internal.bind.v2.util.XmlFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+
+import static com.intellij.psi.PsiElementFactory.SERVICE.getInstance;
 
 
 public class TextBoxes extends AnAction {
@@ -21,6 +33,7 @@ public class TextBoxes extends AnAction {
     // You can omit this constructor when registering the action in the plugin.xml file.
 
     //Old Values
+    private final String oldPermission = "<uses-permission android:name=\"com.android.vending.BILLING\" />";
     private final String oldPackage = "package com.android.vending.billing;";
     private final String oldBillingImport  = "import com.android.vending.billing.IInAppBillingService;";
     private final String oldIntent="Intent serviceIntent = new Intent(\"com.android.vending.billing.InAppBillingService.BIND\");";
@@ -28,6 +41,7 @@ public class TextBoxes extends AnAction {
     private final String fieldName="mService";
 
     //New Values
+    private final String newPermission = "<uses-permission android:name=\"org.onepf.openiab.permission.BILLING\" />";
     private final String newPackage = "org.onepf.oms";
     private final String newBillingImport= "org.onepf.oms.IOpenInAppBillingService";
     private final String newIntent="Intent serviceIntent = new Intent(\"org.onepf.oms.billing.BIND\");";
@@ -41,6 +55,8 @@ public class TextBoxes extends AnAction {
     private Project _project;
     private PsiJavaFile _javaFile;
 
+    private PsiFile _xmlFileToBeChanged;
+
     public TextBoxes() {
         // Set the menu item name.
         super("Text _Boxes");
@@ -52,6 +68,8 @@ public class TextBoxes extends AnAction {
     public void actionPerformed(AnActionEvent event) {
         Project project = event.getData(PlatformDataKeys.PROJECT);
         setProject(project);
+        changeXml();
+
 
         // Translation will be made here
         Processor<PsiClass> processor = new Processor<PsiClass>() {
@@ -63,7 +81,7 @@ public class TextBoxes extends AnAction {
                 setJavaFile(javaFile);
 
                 // Import
-                changeImport(javaFile,project);
+                changeImport();
 
 
                 //Fields and Methods
@@ -106,7 +124,6 @@ public class TextBoxes extends AnAction {
                 return true;
             }
         };
-
         // Get all JavaClasses on project folder
         AllClassesGetter.processJavaClasses(
                 new PlainPrefixMatcher(""),
@@ -119,25 +136,50 @@ public class TextBoxes extends AnAction {
         changeElements();
     }
 
+    private void changeXml() {
+
+        Collection<VirtualFile> xmlFiles = FileBasedIndex.getInstance().getContainingFiles(
+                FileTypeIndex.NAME,
+                XmlFileType.INSTANCE,
+                GlobalSearchScope.allScope(getProject()));
+
+        for (VirtualFile file : xmlFiles) {
+            XmlFile xmlFile = (XmlFile) PsiManager.getInstance(getProject()).findFile(file);
+            if (xmlFile != null) {
+                if (xmlFile.getText().contains(oldPermission)){
+                    setXmlFileToBeChanged(xmlFile);
+                }
+            }
+        }
+
+        if (getXmlFileToBeChanged()!= null){
+            Runnable modificationRunnable= createPermissionRunnable();
+            WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
+
+        }
+
+    }
+
+
     public void changeElements(){
         //Modifies methods and fields
 
         //Methods
         for(PsiMethod method : getMethodsToChange()){
             PsiJavaFile javaFile = getHashMap().get(method);
-            changeMethod(javaFile,getProject(),method);
+            changeMethod(method);
         }
 
         //Fields
         for(PsiField field : getFieldsToChange()){
             PsiJavaFile javaFile = getHashMap().get(field);
-            changeField(javaFile,getProject(),field);
+            changeField(field);
         }
     }
 
 
-    public void changePackage(PsiJavaFile javaFile, Project project){
-        PsiPackageStatement packStatement = javaFile.getPackageStatement();
+    public void changePackage(){
+        PsiPackageStatement packStatement = getJavaFile().getPackageStatement();
 
         if(packStatement == null){
             // do nothing
@@ -148,57 +190,65 @@ public class TextBoxes extends AnAction {
 
         if (packageName.equals(oldPackage)){
             //Fix suggested to an error that appeared when not using Runnable
-            Runnable modificationRunnable= createPackageRunnable(javaFile,project);
-            WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+            Runnable modificationRunnable= createPackageRunnable();
+            WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
         }
 
     }
 
-    public void changeImport(PsiJavaFile javaFile, Project project){
-        PsiImportList list = javaFile.getImportList();
+    public void changeImport(){
+        PsiImportList list = getJavaFile().getImportList();
         PsiImportStatementBase[] imports = list.getAllImportStatements();
-
 
         for (PsiImportStatementBase importStatement: imports){
             String textImport = importStatement.getText();
             if (textImport.equals(oldBillingImport)){
-                Runnable modificationRunnable= createImportRunnable(javaFile,project,importStatement);
-                WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+                Runnable modificationRunnable= createImportRunnable(importStatement);
+                WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
 
             }
         }
     }
 
-    public void changeField(PsiJavaFile javaFile, Project project,PsiField field){
-            Runnable modificationRunnable= createFieldRunnable(javaFile,project,field);
-            WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+    public void changeField(PsiField field){
+            Runnable modificationRunnable= createFieldRunnable(field);
+            WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
     }
 
-    public void changeMethod(PsiJavaFile javaFile, Project project,PsiMethod method){
-        Runnable modificationRunnable= createMethodRunnable(javaFile,project,method);
-        WriteCommandAction.runWriteCommandAction(project, modificationRunnable);
+    public void changeMethod(PsiMethod method){
+        Runnable modificationRunnable= createMethodRunnable(method);
+        WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
 
     }
 
-    public void addField(PsiJavaFile javaFile, Project project,PsiField field){
+    private void addPermission() {
+        //Replaces the PsiFile with a new one with the correct permission.
+        PsiFile newFile;
+        String newText = getXmlFileToBeChanged().getText();
+        newText = newText.replace(oldPermission,newPermission);
+        Document doc = PsiDocumentManager.getInstance(getProject()).getDocument(getXmlFileToBeChanged().getContainingFile());
+        doc.setText(newText);
+    }
+
+    public void addField(PsiField field){
         PsiField newField;
-        newField = JavaPsiFacade.getElementFactory(project).createFieldFromText(newFieldValue,javaFile);
+        newField = JavaPsiFacade.getElementFactory(getProject()).createFieldFromText(newFieldValue,getJavaFile());
         field.replace(newField);
             }
 
 
-    public void addPackage(PsiJavaFile javaFile,Project project){
+    public void addPackage(){
         //Adds package name
-        javaFile.setPackageName(newPackage);
+        getJavaFile().setPackageName(newPackage);
     }
 
-    public void addImport(PsiJavaFile javaFile, Project project,PsiImportStatementBase importStatement) {
+    public void addImport(PsiImportStatementBase importStatement) {
         PsiImportStatement newStatement;
-        newStatement = JavaPsiFacade.getElementFactory(project).createImportStatementOnDemand(newBillingImport);
+        newStatement = JavaPsiFacade.getElementFactory(getProject()).createImportStatementOnDemand(newBillingImport);
         importStatement.replace(newStatement);
     }
 
-    public void addMethod(PsiJavaFile javaFile, Project project,PsiMethod method){
+    public void addMethod(PsiMethod method){
         PsiCodeBlock body = method.getBody();
         String bodyText = body.getText();
 
@@ -207,50 +257,60 @@ public class TextBoxes extends AnAction {
         bodyText = bodyText.replace(oldSetPackage,newSetPackage);
 
         //Replace body
-        PsiCodeBlock newBody = JavaPsiFacade.getElementFactory(project).createCodeBlockFromText(bodyText,javaFile);
+        PsiCodeBlock newBody = JavaPsiFacade.getElementFactory(getProject()).createCodeBlockFromText(bodyText,getJavaFile());
         body.replace(newBody);
     }
 
-
-    private Runnable createPackageRunnable(PsiJavaFile javaFile,Project project){
-
+    private Runnable createPermissionRunnable() {
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addPackage(javaFile,project);
+                addPermission();
             }
         };
         return aRunnable;
     }
 
-    private Runnable createImportRunnable(PsiJavaFile javaFile,Project project,PsiImportStatementBase importStatement){
+
+    private Runnable createPackageRunnable(){
 
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addImport(javaFile,project,importStatement);
+                addPackage();
             }
         };
         return aRunnable;
     }
 
-    private Runnable createFieldRunnable(PsiJavaFile javaFile,Project project,PsiField field){
+    private Runnable createImportRunnable(PsiImportStatementBase importStatement){
 
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addField(javaFile,project,field);
+                addImport(importStatement);
             }
         };
         return aRunnable;
     }
 
-    private Runnable createMethodRunnable(PsiJavaFile javaFile,Project project,PsiMethod method){
+    private Runnable createFieldRunnable(PsiField field){
 
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addMethod(javaFile,project,method);
+                addField(field);
+            }
+        };
+        return aRunnable;
+    }
+
+    private Runnable createMethodRunnable(PsiMethod method){
+
+        Runnable aRunnable = new Runnable() {
+            @Override
+            public void run() {
+                addMethod(method);
             }
         };
         return aRunnable;
@@ -304,6 +364,15 @@ public class TextBoxes extends AnAction {
     public HashMap<PsiElement, PsiJavaFile> getHashMap() {
         return _mapToGetFile;
     }
+
+    public PsiElement getXmlFileToBeChanged() {
+        return _xmlFileToBeChanged;
+    }
+
+    public void setXmlFileToBeChanged(PsiFile _xmlElementToBeChanged) {
+        this._xmlFileToBeChanged = _xmlElementToBeChanged;
+    }
+
 
 }
 
