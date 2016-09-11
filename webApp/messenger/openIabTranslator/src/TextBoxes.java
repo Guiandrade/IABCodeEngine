@@ -6,8 +6,11 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.command.WriteCommandAction;
+import com.intellij.openapi.command.undo.DocumentReferenceManager;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
 import com.intellij.psi.search.FileTypeIndex;
@@ -167,20 +170,19 @@ public class TextBoxes extends AnAction {
         //Methods
         for(PsiMethod method : getMethodsToChange()){
             PsiJavaFile javaFile = getHashMap().get(method);
-            changeMethod(method);
+            changeMethod(javaFile,method);
         }
 
         //Fields
         for(PsiField field : getFieldsToChange()){
             PsiJavaFile javaFile = getHashMap().get(field);
-            changeField(field);
+            changeField(javaFile,field);
         }
     }
 
 
     public void changePackage(){
         PsiPackageStatement packStatement = getJavaFile().getPackageStatement();
-
         if(packStatement == null){
             // do nothing
             return;
@@ -210,29 +212,28 @@ public class TextBoxes extends AnAction {
         }
     }
 
-    public void changeField(PsiField field){
-            Runnable modificationRunnable= createFieldRunnable(field);
+    public void changeField(PsiJavaFile javaFile,PsiField field){
+            Runnable modificationRunnable= createFieldRunnable(javaFile,field);
             WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
     }
 
-    public void changeMethod(PsiMethod method){
-        Runnable modificationRunnable= createMethodRunnable(method);
+    public void changeMethod(PsiJavaFile javaFile,PsiMethod method){
+        Runnable modificationRunnable= createMethodRunnable(javaFile,method);
         WriteCommandAction.runWriteCommandAction(getProject(), modificationRunnable);
 
     }
 
     private void addPermission() {
-        //Replaces the PsiFile with a new one with the correct permission.
-        PsiFile newFile;
+        //Sets correct permission on XML Document.
         String newText = getXmlFileToBeChanged().getText();
         newText = newText.replace(oldPermission,newPermission);
         Document doc = PsiDocumentManager.getInstance(getProject()).getDocument(getXmlFileToBeChanged().getContainingFile());
         doc.setText(newText);
     }
 
-    public void addField(PsiField field){
+    public void addField(PsiJavaFile javaFile,PsiField field){
         PsiField newField;
-        newField = JavaPsiFacade.getElementFactory(getProject()).createFieldFromText(newFieldValue,getJavaFile());
+        newField = JavaPsiFacade.getElementFactory(getProject()).createFieldFromText(newFieldValue,javaFile);
         field.replace(newField);
             }
 
@@ -248,7 +249,7 @@ public class TextBoxes extends AnAction {
         importStatement.replace(newStatement);
     }
 
-    public void addMethod(PsiMethod method){
+    public void addMethod(PsiJavaFile javaFile,PsiMethod method){
         PsiCodeBlock body = method.getBody();
         String bodyText = body.getText();
 
@@ -257,7 +258,7 @@ public class TextBoxes extends AnAction {
         bodyText = bodyText.replace(oldSetPackage,newSetPackage);
 
         //Replace body
-        PsiCodeBlock newBody = JavaPsiFacade.getElementFactory(getProject()).createCodeBlockFromText(bodyText,getJavaFile());
+        PsiCodeBlock newBody = JavaPsiFacade.getElementFactory(getProject()).createCodeBlockFromText(bodyText,javaFile);
         body.replace(newBody);
     }
 
@@ -294,23 +295,23 @@ public class TextBoxes extends AnAction {
         return aRunnable;
     }
 
-    private Runnable createFieldRunnable(PsiField field){
+    private Runnable createFieldRunnable(PsiJavaFile javaFile, PsiField field){
 
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addField(field);
+                addField(javaFile,field);
             }
         };
         return aRunnable;
     }
 
-    private Runnable createMethodRunnable(PsiMethod method){
+    private Runnable createMethodRunnable(PsiJavaFile javaFile,PsiMethod method){
 
         Runnable aRunnable = new Runnable() {
             @Override
             public void run() {
-                addMethod(method);
+                addMethod(javaFile,method);
             }
         };
         return aRunnable;

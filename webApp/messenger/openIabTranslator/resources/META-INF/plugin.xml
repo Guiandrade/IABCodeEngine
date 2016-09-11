@@ -1,12 +1,11 @@
-<idea-plugin version="2">
-  <id>com.your.company.unique.plugin.id</id>
-  <name>Plugin display name here</name>
+<idea-plugin version="1">
+  <id>cm.aptoide.pt.plugin.id</id>
+  <name>IAB Code Migration </name>
   <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+  <vendor email="publishers@aptoide.com" url="https://www.aptoide.com/">Aptoide</vendor>
 
   <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+      Translates code by changing .java and .xml files to the new In-App Billing interface.<br>
     ]]></description>
 
   <change-notes><![CDATA[
